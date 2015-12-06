@@ -16,6 +16,7 @@ import pingparse
 import utc
 import uptimeparse
 
+import settings
 
 # TODO: Check that the node we're connecting to is the one that we think we are connecting to. (ie. check node.json)
 # TODO: Check that we can pull content from data.goddard.com
@@ -29,21 +30,6 @@ import uptimeparse
 # TODO: Option to change the RB750's `admin` password.
 # TODO: Option to change the Grooves's `goddard` SSID password.
 # TODO: Option to change the NUC's `goddard` password.
-
-KILL_RSYNC_ON_CONNECT = False
-FETCH_NODE_JSON = False
-
-PING_TIMEOUT_CHECK_EXT = 10   # Seconds to wait for a response from the Node via the external IP
-CHECK_NODE_TIMEOUT = 300  # How many seconds should we wait for an individual node check to complete
-
-RUN_NETWORK_QUALITY_TEST = True
-PG_CONNECTION_STRING = "host='localhost' dbname='inmarsat' user='postgres'"
-
-REPORT_EMAILS = ["jonathan@io.co.za", "ant@io.co.za", "johann@io.co.za", "bruce@praekeltconsulting.com"]
-REPORT_MINUTES = 1440
-
-SLACK_HOOKS = [('io', 'https://hooks.slack.com/services/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',),
-               ('Praekelt', 'https://hooks.slack.com/services/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',)]
 
 current_count = 0
 nodes_up_count = 0
@@ -77,7 +63,7 @@ def main():
 
 
 def run_one(node_id):
-    conn = psycopg2.connect(PG_CONNECTION_STRING)
+    conn = psycopg2.connect(settings.PG_CONNECTION_STRING)
     cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     cursor.execute("SELECT * FROM nodes WHERE id = %s", (node_id,))
     node = cursor.fetchone()
@@ -91,7 +77,7 @@ def run():
 
     post_to_slack(':rocket: Node Updater Starting Up...')
 
-    conn = psycopg2.connect(PG_CONNECTION_STRING)
+    conn = psycopg2.connect(settings.PG_CONNECTION_STRING)
     cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
     media_folder_size = du('/var/goddard/media/')  # Please note that this is a string.
@@ -103,7 +89,7 @@ def run():
         print "%s" % datetime.now()
 
         # Set our timeout
-        signal.alarm(CHECK_NODE_TIMEOUT)  # 5 minutes to timeout
+        signal.alarm(settings.CHECK_NODE_TIMEOUT)  # 5 minutes to timeout
 
         r = None
         try:
@@ -128,7 +114,7 @@ def run():
 
         print ""
 
-        if datetime.now() > report_start + timedelta(minutes=REPORT_MINUTES):
+        if datetime.now() > report_start + timedelta(minutes=settings.REPORT_MINUTES):
             # Send the report
             send_report()
             report_data = []
@@ -197,7 +183,7 @@ def run_updater(node, node_count, cursor, media_folder_size):
 
                 # We've received some data for this Node at some point in the past, lets try ping it.
                 print "Pinging %s" % device_info['bgan_public_ip']
-                response = os.system("ping -c1 -w%s %s > /dev/null 2>&1" % (PING_TIMEOUT_CHECK_EXT,
+                response = os.system("ping -c1 -w%s %s > /dev/null 2>&1" % (settings.PING_TIMEOUT_CHECK_EXT,
                                                                             device_info['bgan_public_ip']))
 
                 if response == 0:
@@ -317,7 +303,7 @@ def run_updater(node, node_count, cursor, media_folder_size):
             # --------------------------------------------
             # Conditionally kill old rsync processes
             # --------------------------------------------
-            if KILL_RSYNC_ON_CONNECT:
+            if settings.KILL_RSYNC_ON_CONNECT:
                 print 'Node #' + str(port) + " - Killing rsync."
                 result = shell.run(["killall", "rsync"])
 
@@ -326,7 +312,7 @@ def run_updater(node, node_count, cursor, media_folder_size):
                 else:
                     print 'Node #%s had no rsync processes to kill' % serial
 
-            if FETCH_NODE_JSON:
+            if settings.FETCH_NODE_JSON:
                 # --------------------------------------------
                 # Fetching Node Details
                 # --------------------------------------------
@@ -432,7 +418,7 @@ def run_updater(node, node_count, cursor, media_folder_size):
 
         finally:
 
-            if RUN_NETWORK_QUALITY_TEST and device_info:
+            if settings.RUN_NETWORK_QUALITY_TEST and device_info:
                 network_quality_result = pingparse.network_quality_test(device_info['bgan_public_ip'])
             else:
                 network_quality_result = None
@@ -443,7 +429,7 @@ def run_updater(node, node_count, cursor, media_folder_size):
 
 
 def post_to_slack(text):
-    for hook in SLACK_HOOKS:
+    for hook in settings.SLACK_HOOKS:
         print 'Posting to %s Slack... ' % hook[0],
         response = unirest.post(
             hook[1],
@@ -495,7 +481,7 @@ def send_report():
     msg['To'] = 'arbitraryuser@gmail.com'
 
     s = smtplib.SMTP('localhost')
-    s.sendmail('nodeupdater@hub.goddard.unicore.io', REPORT_EMAILS, msg.as_string())
+    s.sendmail('nodeupdater@hub.goddard.unicore.io', settings.REPORT_EMAILS, msg.as_string())
     s.quit()
     post_to_slack(":email: Report Sent. ")
     print "Report Sent"
