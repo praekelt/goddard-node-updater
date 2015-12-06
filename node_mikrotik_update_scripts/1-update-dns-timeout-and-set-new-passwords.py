@@ -3,8 +3,6 @@ import argparse
 
 import mikrotik_api
 
-# python ros_update.py --rb750_password=fr33k5252 --groove_password=fr33k5252 --new_rb750_password=fr33k5252 --new_groove_password=fr33k5252 --new_groove_wlan_password=endersbyhome
-
 parser = argparse.ArgumentParser(description='Modify the Mikrotik devices.')
 
 parser.add_argument('--rb750_password', help="The current admin password for the RB750.")
@@ -24,12 +22,12 @@ if (not args.rb750_password or not args.groove_password or not args.new_rb750_pa
 
 # What we know
 RB750_USER = 'admin'
-RB750_IP = '192.168.0.6'
+RB750_IP = '192.168.0.5'
 RB750_PASSWORD = args.rb750_password
 
 
 GROOVE_USER = 'admin'
-GROOVE_IP = '192.168.0.6'
+GROOVE_IP = '192.168.0.10'
 GROOVE_PASSWORD = args.groove_password
 
 PORT = 8728
