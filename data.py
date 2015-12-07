@@ -4,19 +4,10 @@ import settings
 db = PostgresqlDatabase(settings.NODE_UPDATER_DB_NAME, user=settings.NODE_UPDATER_DB_USER_NAME, host="localhost")
 
 
-class Node(Model):
-    # Purely so we can use it as a foreign key.
-    node_id = IntegerField(unique=True)
-
-    class Meta:
-        database = db
-        db_table = 'nu_node'
-
-
 class Result(Model):
-    date_in = DateTimeField()
-    node = ForeignKeyField(Node, related_name='Node')
-    is_up = BooleanField(default=False)
+    date_in = DateTimeField(index=True)
+    node = IntegerField(index=True)
+    is_up = BooleanField(default=False, index=True)
     last_check_in = DateTimeField(null=True)
     uptime_minutes = IntegerField(null=True)
     packet_loss = FloatField(null=True)
@@ -53,10 +44,6 @@ def connect():
 
 
 def create_tables():
-
-    if not Node.table_exists():
-        print "Created nu_node table."
-        db.create_tables([Node])
 
     if not Result.table_exists():
         print "Created nu_result table."

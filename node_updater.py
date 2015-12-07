@@ -157,15 +157,8 @@ def run_updater(node, node_count, cursor, media_folder_size):
     notices = []
     statistics = []
 
-    # Check if this Node exists in our DB, create it if not.
-    try:
-        nu_node = data.Node.select().where(data.Node.node_id == node['id']).get()
-    except data.DoesNotExist:
-        nu_node = data.Node(node_id=node['id'])
-        nu_node.save()
-
     r = data.Result()
-    r.node = nu_node
+    r.node_id = node['id']
     r.date_in = datetime.now()
 
     print '%s/%s: Trying Node #%s on Port %s' % (current_count, node_count, serial, port)
