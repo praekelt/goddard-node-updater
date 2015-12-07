@@ -6,7 +6,7 @@ db = PostgresqlDatabase(settings.NODE_UPDATER_DB_NAME, user=settings.NODE_UPDATE
 
 class Result(Model):
     date_in = DateTimeField(index=True)
-    node = IntegerField(index=True)
+    node_id = IntegerField(index=True)
     is_up = BooleanField(default=False, index=True)
     last_check_in = DateTimeField(null=True)
     uptime_minutes = IntegerField(null=True)
