@@ -15,7 +15,7 @@ class Result(Model):
     external_ping_up = BooleanField(null=True)
     node_agent_rsync_success = BooleanField(null=True)
     node_agent_updated = BooleanField(null=True)
-    restarted_upstart = BooleanField(null=True)
+    restarted_goddardboot = BooleanField(null=True)
     cron_set_success = BooleanField(null=True)
     rsync_process_count = IntegerField(null=True)
     captive_portal_available = BooleanField(null=True)

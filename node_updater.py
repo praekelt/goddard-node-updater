@@ -203,6 +203,7 @@ def run_updater(node, node_count, cursor, media_folder_size):
             if device_info:
                 ip_date = device_info['createdAt']
                 ip_age = datetime.now(utc.utc) - ip_date
+                r.last_check_in = ip_date
 
                 # We've received some data for this Node at some point in the past, lets try ping it.
                 print "Pinging %s" % device_info['bgan_public_ip']
@@ -236,7 +237,6 @@ def run_updater(node, node_count, cursor, media_folder_size):
 
                 msg += '    Last check-in was %s days and %s minutes ago.' % (ip_age.days, ip_age.seconds/60)
 
-                r.last_check_in = ip_date
                 r.save()
 
                 post_to_slack(msg)
@@ -454,7 +454,12 @@ def run_updater(node, node_count, cursor, media_folder_size):
             # Add in the uptime and load from earlier.
             # --------------------------------------------
             if uptime_object:
+
                 r.uptime_minutes = uptime_object.total_minutes()
+                r.load1 = uptime_object.load1
+                r.load2 = uptime_object.load2
+                r.load3 = uptime_object.load3
+
                 msg_strs.append('Uptime: %s days, %s hours, %s minutes.    '
                                 % (uptime_object.days, uptime_object.hours, uptime_object.minutes))
 
