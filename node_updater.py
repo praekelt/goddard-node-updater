@@ -295,7 +295,7 @@ def run_updater(node, node_count, cursor, media_folder_size):
                     print 'Node #%s was already up to date.' % serial
                     msg_strs.append('Node Agent up to date.    ')
                     r.node_agent_updated = False
-                    r.restarted_upstart = False
+                    r.restarted_goddardboot = False
 
             else:
                 r.node_agent_rsync_success = False
