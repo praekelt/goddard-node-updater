@@ -288,7 +288,7 @@ def run_updater(node, node_count, cursor, media_folder_size):
                     print 'Node #%s restarting the goddardboot service... ' % serial,
                     shell.run(["service", "goddardboot", "restart"])
                     print ' Restarted.'
-                    r.restarted_upstart = True
+                    r.restarted_goddardboot = True
                     msg_strs.append('Node Agent was updated.    GoddardBoot restarted.    ')
 
                 else:
