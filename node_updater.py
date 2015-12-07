@@ -25,9 +25,9 @@ import data
 
 from sys import platform as _platform
 if _platform == "linux" or _platform == "linux2":
-    LINUX_MODE = True
+    OS_MODE = "LINUX"
 elif _platform == "darwin":
-    OSX_MODE = True
+    OS_MODE = "OSX"
 
 
 # TODO: Check that the node we're connecting to is the one that we think we are connecting to. (ie. check node.json)
@@ -207,7 +207,7 @@ def run_updater(node, node_count, cursor, media_folder_size):
                 # We've received some data for this Node at some point in the past, lets try ping it.
                 print "Pinging %s" % device_info['bgan_public_ip']
 
-                if OSX_MODE:
+                if OS_MODE == "OSX":
                     response = os.system("ping -c1 -t3600 -W5000 %s > /dev/null 2>&1" % (
                         device_info['bgan_public_ip']))
 
