@@ -12,18 +12,30 @@ from email.mime.text import MIMEText
 import signal
 import subprocess
 
-import pingparse
+# Our Modules
 import utc
+import pingparse
 import uptimeparse
 
+# Our Settings
 import settings
+
+# Import our database ORM
+import data
+
+from sys import platform as _platform
+if _platform == "linux" or _platform == "linux2":
+    LINUX_MODE = True
+elif _platform == "darwin":
+    OSX_MODE = True
+
 
 # TODO: Check that the node we're connecting to is the one that we think we are connecting to. (ie. check node.json)
 # TODO: Check that we can pull content from data.goddard.com
 # TODO: Possibly pull in some bgan data like temp, signal etc.
 # TODO: Strip out and parse docker ps output
 # TODO: Some smarter ps ax | grep rsync to try and spot hanging processes lots of dupes
-# TODO: Pull down "free"
+# TODO: Pull down "free | awk 'FNR == 3 {print $4/($3+$4)*100}'" which gives a memory usage percent.
 # TODO: Do not try and check nodes that are marked as disabled.
 # TODO: Do a sanity check that all the of the tunnels that exist locally have been accounted for.
 # TODO: Accept arguments for RUN_NETWORK_QUALITY_TEST etc.
@@ -36,6 +48,11 @@ nodes_up_count = 0
 tunnel_broken_count = 0
 report_start = None
 report_data = []
+
+
+# Connect to our db and create any tables that might not exist currently.
+data.connect()
+data.create_tables()
 
 
 class NodeCommsTimeoutError(Exception):
@@ -101,6 +118,7 @@ def run():
 
         except Exception, e:
             print 'Exception on Node Comms'
+            print e
             post_to_slack(":feelsgood: %s - Exception while trying to communicate with Node.\n"
                           "Exception: %s" % (linkit(node), e))
 
@@ -139,6 +157,17 @@ def run_updater(node, node_count, cursor, media_folder_size):
     notices = []
     statistics = []
 
+    # Check if this Node exists in our DB, create it if not.
+    try:
+        nu_node = data.Node.select().where(data.Node.node_id == node['id']).get()
+    except data.DoesNotExist:
+        nu_node = data.Node(node_id=node['id'])
+        nu_node.save()
+
+    r = data.Result()
+    r.node = nu_node
+    r.date_in = datetime.now()
+
     print '%s/%s: Trying Node #%s on Port %s' % (current_count, node_count, serial, port)
 
     # Get this Node's last IP
@@ -172,6 +201,7 @@ def run_updater(node, node_count, cursor, media_folder_size):
 
             nodes_up_count += 1
             print 'Node #%s appears to be up!' % serial
+            r.is_up = True
 
         except spur.ssh.ConnectionError:
 
@@ -183,13 +213,20 @@ def run_updater(node, node_count, cursor, media_folder_size):
 
                 # We've received some data for this Node at some point in the past, lets try ping it.
                 print "Pinging %s" % device_info['bgan_public_ip']
-                response = os.system("ping -c1 -w%s %s > /dev/null 2>&1" % (settings.PING_TIMEOUT_CHECK_EXT,
-                                                                            device_info['bgan_public_ip']))
+
+                if OSX_MODE:
+                    response = os.system("ping -c1 -t3600 -W5000 %s > /dev/null 2>&1" % (
+                        device_info['bgan_public_ip']))
+
+                else:
+                    response = os.system("ping -c1 -w%s %s > /dev/null 2>&1" % (settings.PING_TIMEOUT_CHECK_EXT,
+                                                                                device_info['bgan_public_ip']))
 
                 if response == 0:
                     print 'Node #%s responded to a ping! - We should investigate.' % serial
                     msg = ':no_entry: %s - Tunnel down but getting external ping response! ' % (linkit(node))
                     tunnel_broken_count += 1
+                    r.external_ping_up = True
 
                     print 'Node #%s killing hanging tunnel instance...' % serial,
                     os.system("kill $(lsof -i:" + str(port) + " -t)")
@@ -198,11 +235,17 @@ def run_updater(node, node_count, cursor, media_folder_size):
                                   "again on next loop." % linkit(node))
 
                 else:
+
                     print 'Node #%s did not respond to a ping, it\'s probably down.' % serial
                     msg = ':warning: %s - Tunnel down and no external ping ' \
                           'response. ' % (linkit(node))
+                    r.is_up = False
 
                 msg += '    Last check-in was %s days and %s minutes ago.' % (ip_age.days, ip_age.seconds/60)
+
+                r.last_check_in = ip_date
+                r.save()
+
                 post_to_slack(msg)
 
                 # This tunnel/node is broken, exit this loop.
@@ -210,10 +253,14 @@ def run_updater(node, node_count, cursor, media_folder_size):
                         'statistics': statistics}
 
             else:
+
                 print 'Node #%s has never received a check-in. Probably was never provisioned.' % serial
                 post_to_slack(':grey_question: %s has never received a check-in. Probably never '
                               'provisioned.' % (linkit(node)))
                 errors.append('This node has never been provisioned.')
+
+                r.never_provisioned = True
+                r.save()
 
                 return {'up': False, 'msg': None, 'warnings': warnings, 'errors': errors, 'notices': notices,
                         'statistics': statistics}
@@ -230,10 +277,13 @@ def run_updater(node, node_count, cursor, media_folder_size):
                                 "node@hub.goddard.unicore.io:/var/goddard/agent/", "/var/goddard/agent"])
 
             if result.return_code == 0:
+                r.node_agent_rsync_success = True
                 print 'Node #%s rsync ran successfully' % serial
 
                 # Did anything change?
                 if len(result.output.split('\n')) > 2:
+
+                    r.node_agent_updated = True
 
                     print 'Node #%s was updated with new changes for agent.' % serial
                     print 'Node #%s ensuring goddardboot service is present.' % serial
@@ -245,13 +295,17 @@ def run_updater(node, node_count, cursor, media_folder_size):
                     print 'Node #%s restarting the goddardboot service... ' % serial,
                     shell.run(["service", "goddardboot", "restart"])
                     print ' Restarted.'
+                    r.restarted_upstart = True
                     msg_strs.append('Node Agent was updated.    GoddardBoot restarted.    ')
 
                 else:
                     print 'Node #%s was already up to date.' % serial
                     msg_strs.append('Node Agent up to date.    ')
+                    r.node_agent_updated = False
+                    r.restarted_upstart = False
 
             else:
+                r.node_agent_rsync_success = False
                 print 'Node #' + str(port) + " something went wrong while trying to rsync"
 
             # --------------------------------------------
@@ -261,8 +315,10 @@ def run_updater(node, node_count, cursor, media_folder_size):
 
             if result.return_code == 0:
                 print 'Node #%s cron management ran successfully.' % serial
+                r.cron_set_success = True
             else:
                 print 'Node #%s cron management had a problem executing.' % serial
+                r.cron_set_success = False
 
             # --------------------------------------------
             # Check how many rsync processes are running.
@@ -277,6 +333,8 @@ def run_updater(node, node_count, cursor, media_folder_size):
                     rsync_count += 1
 
             msg_strs.append('%s rsync processes running.    ' % rsync_count)
+
+            r.rsync_process_count = rsync_count
             print 'Node #%s has %s rsync processes running.' % (serial, rsync_count)
 
             # --------------------------------------------
@@ -287,14 +345,18 @@ def run_updater(node, node_count, cursor, media_folder_size):
             if "swatch" in result.output:
                 msg_strs.append('Nov 2015 Captive Portal is available.    ')
                 print 'Node #%s Nov 2015 Captive Portal is available.' % serial
+                r.captive_portal_available = True
 
             else:
+                r.captive_portal_available = False
                 if uptime_object.total_minutes() > 15:
+                    r.captive_portal_available_error = True
                     msg_strs.append('Nov 2015 Captive Portal is NOT available. :feelsgood:    ')
                     print 'Node #%s Nov 2015 Captive Portal is NOT available.' % serial
                     warnings.append("Nov 2015 Captive Portal is NOT available.")
 
                 else:
+                    r.captive_portal_available_error = False
                     msg_strs.append("Nov 2015 Captive Portal is not available, but Node has just booted so we're "
                                     "ignoring that for now.    ")
                     print("Nov 2015 Captive Portal is not available, but Node has just booted so we're "
@@ -309,19 +371,23 @@ def run_updater(node, node_count, cursor, media_folder_size):
 
                 if result.return_code == 0:
                     print 'Node #%s had its rsync process killed' % serial
+                    r.killed_rsync_processes = True
                 else:
                     print 'Node #%s had no rsync processes to kill' % serial
+                    r.killed_rsync_processes = False
 
+            # --------------------------------------------
+            # Fetching Node Details
+            # --------------------------------------------
             if settings.FETCH_NODE_JSON:
-                # --------------------------------------------
-                # Fetching Node Details
-                # --------------------------------------------
-                # This is a bit redundant now because we're running against the DB, but I want to leave it here.
                 print 'Node #%s getting Node Details' % serial
                 result = shell.run(["cat", "/var/goddard/node.json"])
                 parsed_obj = json.loads(str(result.output))
                 node_id_string = parsed_obj["name"] + ' #' + parsed_obj["serial"]
                 print node_id_string
+                r.fetched_node_json = True
+            else:
+                r.fetched_node_json = False
 
             # --------------------------------------------
             # Get the size of the media folder
@@ -332,13 +398,17 @@ def run_updater(node, node_count, cursor, media_folder_size):
 
             if result.return_code == 0:
                 node_media_size = result.output.split('\t')[0]
+                r.media_folder_size = node_media_size
+
                 if node_media_size != media_folder_size:
+                    r.media_sync_complete = False
                     # The media folder sizes do not match
 
                     # Have we got 2 rsync processed running, or has the node only been up for < 1 hour ?
                     # Also, is this happening in a time that isn't between :58 and :7 minutes past the hour?
 
                     if rsync_count >= 2:
+                        r.media_sync_error = False
                         # Not up to date, but we are syncing...
                         msg_strs.append(":hourglass_flowing_sand: Media folder sizes do not match but we are "
                                         "currently syncing.    ")
@@ -348,11 +418,11 @@ def run_updater(node, node_count, cursor, media_folder_size):
                         # Is this excusable ?
                         # 70 = 60 + 10 for boot.
                         if uptime_object.total_minutes() > 70 and 58 > datetime.now().minute > 7:
-
                             # Node syncing appears broken. We've been up for enough time to have started the sync,
                             # but we aren't syncing, and we aren't in a period where cron specifically kills
                             # the syncing.
 
+                            r.media_sync_error = True
                             warnings.append("Media sync appears broken. Folder sizes don't match, but Node has "
                                             "been up for %s minutes and has %s rsync processes running."
                                             % (uptime_object.total_minutes(), rsync_count))
@@ -364,6 +434,8 @@ def run_updater(node, node_count, cursor, media_folder_size):
 
                         else:
                             # This is excusable...
+
+                            r.media_sync_error = False
                             msg_strs.append("Media folder sizes do not match and we aren't syncing, but we've either "
                                             "booted < 60 minutes ago or are in a time where we know cron might have "
                                             "stopped rsync.    ")
@@ -371,6 +443,7 @@ def run_updater(node, node_count, cursor, media_folder_size):
                                   "can ignore.")
 
                 else:
+                    r.media_sync_complete = True
                     msg_strs.append(":white_check_mark: Media folder is synced successfully.    ")
 
                 # add to the message that will be sent to Slack
@@ -379,6 +452,7 @@ def run_updater(node, node_count, cursor, media_folder_size):
                 print "%s." % node_media_size
 
             else:
+                r.media_sync_error = True
                 print 'Node #%s had problems getting the size.' % serial
                 # add to the message that will be sent to Slack
                 msg_strs.append(':feelsgood: Media folder size could not be determined.    ')
@@ -387,8 +461,7 @@ def run_updater(node, node_count, cursor, media_folder_size):
             # Add in the uptime and load from earlier.
             # --------------------------------------------
             if uptime_object:
-                print type(uptime_object)
-                print uptime_object
+                r.uptime_minutes = uptime_object.total_minutes()
                 msg_strs.append('Uptime: %s days, %s hours, %s minutes.    '
                                 % (uptime_object.days, uptime_object.hours, uptime_object.minutes))
 
@@ -407,23 +480,27 @@ def run_updater(node, node_count, cursor, media_folder_size):
 
             msg_strs.append('\n```' + str(result.output) + '```\n')
 
+            r.docker_ps_output = str(result.output)
             # --------------------------------------------
             # Send the results to Slack
             # --------------------------------------------
             msg = ''.join(msg_strs)
             post_to_slack(msg)
 
+            r.save()
+
             return {'up': True, 'warnings': warnings, 'errors': errors, 'notices': notices, 'statistics': statistics,
                     'msg': msg}
 
         finally:
-
             if settings.RUN_NETWORK_QUALITY_TEST and device_info:
                 network_quality_result = pingparse.network_quality_test(device_info['bgan_public_ip'])
             else:
                 network_quality_result = None
 
             if network_quality_result:
+                r.packet_loss = network_quality_result['packet_loss']
+                r.save()
                 if network_quality_result['packet_loss'] != "100%":
                     post_to_slack("*Node #%s* Network Health: %s" % (serial, network_quality_result))
 
@@ -478,7 +555,6 @@ def send_report():
     msg = MIMEText(out)
     msg['Subject'] = 'Goddard Node Updater Report Email'
     msg['From'] = 'nodeupdater@hub.goddard.unicore.io'
-    msg['To'] = 'arbitraryuser@gmail.com'
 
     s = smtplib.SMTP('localhost')
     s.sendmail('nodeupdater@hub.goddard.unicore.io', settings.REPORT_EMAILS, msg.as_string())

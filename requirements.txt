@@ -1,3 +1,4 @@
 spur==0.3.14
 psycopg2==2.6
 Unirest==1.1.7
+peewee==2.6.4

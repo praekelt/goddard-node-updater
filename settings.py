@@ -7,6 +7,9 @@ CHECK_NODE_TIMEOUT = 300  # How many seconds should we wait for an individual no
 RUN_NETWORK_QUALITY_TEST = True
 PG_CONNECTION_STRING = "host='localhost' dbname='thedbname' user='postgres'"
 
+NODE_UPDATER_DB_NAME = "theotherdbname"
+NODE_UPDATER_DB_USER_NAME = "postgres"
+
 REPORT_EMAILS = ["foo@bar.com", "ding@bat.com"]
 REPORT_MINUTES = 1440
 
