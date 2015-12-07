@@ -499,10 +499,13 @@ def run_updater(node, node_count, cursor, media_folder_size):
                 network_quality_result = None
 
             if network_quality_result:
-                r.packet_loss = network_quality_result['packet_loss']
+
+                r.packet_loss = float(network_quality_result['packet_loss'].strip('%')) / 100.0
                 r.save()
                 if network_quality_result['packet_loss'] != "100%":
                     post_to_slack("*Node #%s* Network Health: %s" % (serial, network_quality_result))
+
+            r.save()
 
 
 def post_to_slack(text):
