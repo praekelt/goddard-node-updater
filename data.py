@@ -1,7 +1,7 @@
 from peewee import *
 import settings
 
-db = PostgresqlDatabase(settings.NODE_UPDATER_DB_NAME, user=settings.NODE_UPDATER_DB_USER_NAME)
+db = PostgresqlDatabase(settings.NODE_UPDATER_DB_NAME, user=settings.NODE_UPDATER_DB_USER_NAME, host="localhost")
 
 
 class Node(Model):
