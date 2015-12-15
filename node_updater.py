@@ -58,6 +58,8 @@ data.create_tables()
 class NodeCommsTimeoutError(Exception):
     pass
 
+class GeneralNodeError(Exception):
+    pass
 
 def main():
     global current_count, nodes_up_count, tunnel_broken_count, report_start
@@ -145,6 +147,22 @@ def run():
         post_to_slack(":no_entry: There are %s nodes with questionable connectivity." % tunnel_broken_count)
 
     print "Update Run Complete"
+
+
+def get_migration(node_id, migration_slug):
+    # Looks in the migration log for a record that represents a successful migration for this node.
+    migration = data.MigrationHistory.select().where(data.MigrationHistory.node_id == node_id,
+                                                     data.MigrationHistory.migration_slug == migration_slug)
+    return migration
+
+
+def set_migration(node_id, migration_slug, success):
+    migration = data.MigrationHistory()
+    migration.node_id = node_id
+    migration.migration_slug = migration_slug
+    migration.success = success
+    migration.date_in = datetime.now()
+    migration.save()
 
 
 def run_updater(node, node_count, cursor, media_folder_size):
@@ -260,8 +278,95 @@ def run_updater(node, node_count, cursor, media_folder_size):
 
         # We've got this far, so the Node's tunnel is up.
 
+        msg_strs = [':green_heart: %s - ' % (linkit(node))]
+
         try:
-            msg_strs = [':green_heart: %s - ' % (linkit(node))]
+            # --------------------------------------------
+            # Run the Mikrotik Updates
+            # --------------------------------------------
+
+            # Rsyncing up the mikrotik update scripts. We do this every time.
+            print 'Rsyncing the mikrotik scripts up to the Node'
+
+            result = shell.run(["mkdir", "-p", "/var/goddard/node_updater/"])
+
+            if result.return_code != 0:
+                raise GeneralNodeError('Could not create /var/goddard/node_updater directory.')
+
+            result = \
+                shell.run(["rsync", "-aPzri", "--exclude='.git/'", "--no-perms", "--no-owner", "--progress",
+                          "node@hub.goddard.unicore.io:/var/goddard/node_updater/node_mikrotik_update_scripts/",
+                           "/var/goddard/node_updater/node_mikrotik_update_scripts"])
+
+            if result.return_code != 0:
+                raise GeneralNodeError('Rsync of Mikrotik Update Scripts failed')
+            else:
+                print 'Mikrotik update scripts rsynced successfully.'
+
+            if settings.EXECUTE_MIKROTIK_UPDATE_1:
+                migration_slug = "MIKROTIK_UPDATE_1"
+
+                # Check if we've successfully run this migration
+                migration = get_migration(node['id'], migration_slug)
+
+                if len(migration) < 1:
+                    # Execute the script
+                    print "Migration: %s - Running" % migration_slug
+                    result = shell.run(["python", "/var/goddard/node_updater/node_mikrotik_update_scripts/1-update-"
+                                                  "dns-timeout-and-set-new-passwords.py",
+                                                  "--rb750_password", settings.RB750_PASSWORD,
+                                                  "--groove_password", settings.GROOVE_PASSWORD,
+                                                  "--new_rb750_password", settings.NEW_RB750_PASSWORD,
+                                                  "--new_groove_password", settings.NEW_GROOVE_PASSWORD,
+                                                  "--new_groove_wlan_password", settings.NEW_GROOVE_WLAN_PASSWORD
+                                        ])
+
+                    # Evaluate the output
+                    print "output: %s" % result.output
+                    print "return code: %s" % result.return_code
+                    print "stderr: %s" % result.stderr_output
+
+                    if result.return_code == 0:
+                        set_migration(node['id'], migration_slug, True)
+                        print 'Migration: %s - Success' % migration_slug
+                        msg_strs.append(':lock: Mikrotik Passwords Update Success    ')
+                    else:
+                        set_migration(node['id'], migration_slug, False)
+                        print 'Migration: %s - Failed' % migration_slug
+                        msg_strs.append(':feelsgood: Mikrotik Passwords Update Failure    ')
+
+                else:
+                    print 'Migration: %s - Skipped, has been run successfully in the past.' % migration_slug
+
+            # --------------------------------------------
+            # Change the goddard user password
+            # --------------------------------------------
+
+            if settings.CHANGE_GODDARD_PASSWORD:
+                migration_slug = "GODDARD_OS_USER_PASSWORD_UPDATE_1"
+
+                # Check if we've successfully run this migration
+                migration = get_migration(node['id'], migration_slug)
+
+                if len(migration) < 1:
+                    # Execute the SSH command to change the password.
+                    print "Migration: %s - Running" % migration_slug
+                    result = shell.run(["echo", "'goddard:rogerwilco'", "|", "chpasswd"])
+                    print "output: %s" % result.output
+                    print "return code: %s" % result.return_code
+                    print "stderr: %s" % result.stderr_output
+
+                    if result.return_code == 0:
+                        set_migration(node['id'], migration_slug, True)
+                        print 'Migration: %s - Success' % migration_slug
+                        msg_strs.append(':lock: Goddard User Password Update Success    ')
+                    else:
+                        set_migration(node['id'], migration_slug, False)
+                        print 'Migration: %s - Failed' % migration_slug
+                        msg_strs.append(':feelsgood: Goddard User Password Update Failed    ')
+
+                else:
+                    print 'Migration: %s - Skipped, has been run successfully in the past.' % migration_slug
 
             # --------------------------------------------
             # Rsync the Node Agent code
