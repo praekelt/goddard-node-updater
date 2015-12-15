@@ -39,6 +39,17 @@ class Result(Model):
         db_table = 'nu_result'
 
 
+class MigrationHistory(Model):
+    node_id = IntegerField(index=True)
+    migration_slug = CharField(max_length=64)
+    date_in = DateTimeField(index=True)
+    success = BooleanField(default=False)
+
+    class Meta:
+        database = db
+        db_table = 'nu_migration_history'
+
+
 def connect():
     db.connect()
 
@@ -48,3 +59,7 @@ def create_tables():
     if not Result.table_exists():
         print "Created nu_result table."
         db.create_tables([Result])
+
+    if not MigrationHistory.table_exists():
+        print "Created nu_migration_history table."
+        db.create_tables([MigrationHistory])
