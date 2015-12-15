@@ -17,6 +17,16 @@ SLACK_HOOKS = [('team1_name', 'https://hooks.slack.com/services/xxxxxxx/yyyyyyyy
                ('team2_name', 'https://hooks.slack.com/services/wwwwwww/zzzzzzzzz',)]
 
 
+EXECUTE_MIKROTIK_UPDATE_1 = True
+
+RB750_PASSWORD = "OldPassword1"
+GROOVE_PASSWORD = "OldPassword2"
+NEW_RB750_PASSWORD = "SuperSecurePassword1"
+NEW_GROOVE_PASSWORD = "SuperSecurePassword2"
+NEW_GROOVE_WLAN_PASSWORD = "SuperSecurePassword3"
+
+CHANGE_GODDARD_PASSWORD = True
+
 try:
     from local_settings import *
 except ImportError:
