@@ -22,12 +22,12 @@ if (not args.rb750_password or not args.groove_password or not args.new_rb750_pa
 
 # What we know
 RB750_USER = 'admin'
-RB750_IP = '192.168.0.5'
+RB750_IP = '192.168.88.5'
 RB750_PASSWORD = args.rb750_password
 
 
 GROOVE_USER = 'admin'
-GROOVE_IP = '192.168.0.10'
+GROOVE_IP = '192.168.88.10'
 GROOVE_PASSWORD = args.groove_password
 
 PORT = 8728
@@ -42,10 +42,10 @@ NEW_GROOVE_PASSWORD = args.new_groove_password
 NEW_GROOVE_WLAN_PASSWORD = args.new_groove_wlan_password
 
 
-# Check that we have sane values
-#if NEW_RB750_PASSWORD == NEW_GROOVE_PASSWORD or NEW_GROOVE_PASSWORD == NEW_GROOVE_WLAN_PASSWORD or \
-#   NEW_GROOVE_WLAN_PASSWORD == NEW_RB750_PASSWORD:
-#    raise Exception("New passwords need to be unique.")
+# # Check that we have sane values
+# if NEW_RB750_PASSWORD == NEW_GROOVE_PASSWORD or NEW_GROOVE_PASSWORD == NEW_GROOVE_WLAN_PASSWORD or \
+#    NEW_GROOVE_WLAN_PASSWORD == NEW_RB750_PASSWORD:
+#     raise Exception("New passwords need to be unique.")
 
 # Check that all the passwords are long enough
 if (len(NEW_RB750_PASSWORD) < MIN_PASSWORD_LENGTH or len(NEW_GROOVE_PASSWORD) < MIN_PASSWORD_LENGTH or
