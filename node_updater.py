@@ -567,7 +567,7 @@ def run_updater(node, node_count, cursor, media_folder_size):
                                         "http://mamawifi.com/healthcare-worker-training/medical-procedures"])
 
                     if "Taking a Heel Blood Sample" in result.output:
-                        msg_strs.append(":+1: Test Video via Healthcare Worker Training page.    ")
+                        msg_strs.append(":+1: Test Video is available via Healthcare Worker Training page.    ")
 
                     else:
                         msg_strs.append(":feelsgood: Test Video NOT available via Healthcare Worker Training page.    ")
