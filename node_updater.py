@@ -554,13 +554,13 @@ def run_updater(node, node_count, cursor, media_folder_size):
                         msg_strs.append(":film_frames: Test video is available via Media Share, ")
 
                         if "Content-Length: 14202984" in result.output:
-                            msg_strs.append(":bulb: Test video size is correct.")
+                            msg_strs.append(":bulb: Test video size is correct, ")
 
                         else:
-                            msg_strs.append(":feelsgood: Video size does not match.")
+                            msg_strs.append(":feelsgood: Video size does not match, ")
 
                     else:
-                        msg_strs.append(":feelsgood: Test Video NOT available via Media Share.")
+                        msg_strs.append(":feelsgood: Test Video NOT available via Media Share, ")
 
                     # Do the test for a specific page's content.
                     result = shell.run(["curl", "--silent",
