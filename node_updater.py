@@ -554,13 +554,24 @@ def run_updater(node, node_count, cursor, media_folder_size):
                         msg_strs.append(":film_frames: Test video is available via Media Share, ")
 
                         if "Content-Length: 14202984" in result.output:
-                            msg_strs.append(":bulb: Test video size is correct.    ")
+                            msg_strs.append(":bulb: Test video size is correct.")
 
                         else:
-                            msg_strs.append(":feelsgood: Video size does not match.    ")
+                            msg_strs.append(":feelsgood: Video size does not match.")
 
                     else:
-                        msg_strs.append(":feelsgood: Test Video not available via Media Share.    ")
+                        msg_strs.append(":feelsgood: Test Video NOT available via Media Share.")
+
+                    # Do the test for a specific page's content.
+                    result = shell.run(["curl", "--silent",
+                                        "http://mamawifi.com/healthcare-worker-training/medical-procedures"])
+
+                    if "Taking a Heel Blood Sample" in result.output:
+                        msg_strs.append(":+1: Test Video via Healthcare Worker Training page.    ")
+
+                    else:
+                        msg_strs.append(":feelsgood: Test Video NOT available via Healthcare Worker Training page.    ")
+
 
                 # add to the message that will be sent to Slack
                 msg_strs.append('Media folder is %s/%s.    ' % (node_media_size, media_folder_size))
