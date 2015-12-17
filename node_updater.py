@@ -282,10 +282,8 @@ def run_updater(node, node_count, cursor, media_folder_size):
 
         try:
             # --------------------------------------------
-            # Run the Mikrotik Updates
+            # Rsyncing up the mikrotik update scripts.
             # --------------------------------------------
-
-            # Rsyncing up the mikrotik update scripts. We do this every time.
             print 'Rsyncing the mikrotik scripts up to the Node'
 
             result = shell.run(["mkdir", "-p", "/var/goddard/node_updater/"])
@@ -303,6 +301,9 @@ def run_updater(node, node_count, cursor, media_folder_size):
             else:
                 print 'Mikrotik update scripts rsynced successfully.'
 
+            # --------------------------------------------
+            # UPDATE 1 - Various passwords and DNS timeout
+            # --------------------------------------------
             if settings.EXECUTE_MIKROTIK_UPDATE_1:
                 migration_slug = "MIKROTIK_UPDATE_1"
 
@@ -337,6 +338,45 @@ def run_updater(node, node_count, cursor, media_folder_size):
 
                 else:
                     print 'Migration: %s - Skipped, has been run successfully in the past.' % migration_slug
+
+            # --------------------------------------------
+            # UPDATE 1 - Various passwords and DNS timeout
+            # --------------------------------------------
+            if settings.EXECUTE_MIKROTIK_UPDATE_2:
+                migration_slug = "MIKROTIK_UPDATE_2"
+
+                # Check if we've successfully run this migration
+                migration = get_migration(node['id'], migration_slug)
+
+                if len(migration) < 1:
+                    # Execute the script
+                    print "Migration: %s - Running" % migration_slug
+                    result = shell.run(["python", "/var/goddard/node_updater/node_mikrotik_update_scripts/1-update-"
+                                                  "dns-timeout-and-set-new-passwords.py",
+                                                  "--rb750_password", settings.RB750_PASSWORD,
+                                                  "--groove_password", settings.GROOVE_PASSWORD,
+                                                  "--new_rb750_password", settings.NEW_RB750_PASSWORD,
+                                                  "--new_groove_password", settings.NEW_GROOVE_PASSWORD,
+                                                  "--new_groove_wlan_password", settings.NEW_GROOVE_WLAN_PASSWORD
+                                        ])
+
+                    # Evaluate the output
+                    print "output: %s" % result.output
+                    print "return code: %s" % result.return_code
+                    print "stderr: %s" % result.stderr_output
+
+                    if result.return_code == 0:
+                        set_migration(node['id'], migration_slug, True)
+                        print 'Migration: %s - Success' % migration_slug
+                        msg_strs.append(':satellite: MTU Update on RB750 complete.    ')
+                    else:
+                        set_migration(node['id'], migration_slug, False)
+                        print 'Migration: %s - Failed' % migration_slug
+                        msg_strs.append(':feelsgood: MTU Update on RB750 failed.    ')
+
+                else:
+                    print 'Migration: %s - Skipped, has been run successfully in the past.' % migration_slug
+
 
             # --------------------------------------------
             # Change the goddard user password
