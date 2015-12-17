@@ -351,7 +351,7 @@ def run_updater(node, node_count, cursor, media_folder_size):
                 if len(migration) < 1:
                     # Execute the SSH command to change the password.
                     print "Migration: %s - Running" % migration_slug
-                    result = shell.run(["echo", "'goddard:rogerwilco'", "|", "chpasswd"])
+                    result = shell.run(["echo", "'goddard:%s'" % settings.NEW_GODDARD_USER_PASSWORD, "|", "chpasswd"])
                     print "output: %s" % result.output
                     print "return code: %s" % result.return_code
                     print "stderr: %s" % result.stderr_output
@@ -543,6 +543,24 @@ def run_updater(node, node_count, cursor, media_folder_size):
                 else:
                     r.media_sync_complete = True
                     msg_strs.append(":white_check_mark: Media folder is synced successfully.    ")
+
+                    # Do the test for a specific file...
+
+                    result = shell.run(["curl", "--head", "--silent",
+                                        "http://data.goddard.com/media/gem/medical_procedures/Newborn_Care_Ser"
+                                        "ies_-_Taking_a_Heel_Blood_Sample-MieKJa5YJd4.mp4.3gp"])
+
+                    if "HTTP/1.1 200 OK" in result.output:
+                        msg_strs.append(":movie_camera: Test video is present via Media Share, ")
+
+                        if "Content-Length: 14202984" in result.output:
+                            msg_strs.append(":bulb: Test video size matches.    ")
+
+                        else:
+                            msg_strs.append(":feelsgood: Video size does not match.    ")
+
+                    else:
+                        msg_strs.append(":feelsgood: Test Video not available via Media Share.    ")
 
                 # add to the message that will be sent to Slack
                 msg_strs.append('Media folder is %s/%s.    ' % (node_media_size, media_folder_size))

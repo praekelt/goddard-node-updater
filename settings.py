@@ -25,6 +25,8 @@ NEW_GROOVE_PASSWORD = "SuperSecurePassword2"
 NEW_GROOVE_WLAN_PASSWORD = "SuperSecurePassword3"
 
 CHANGE_GODDARD_PASSWORD = False
+NEW_GODDARD_USER_PASSWORD = "SuperSecurePassword4"
+
 
 try:
     from local_settings import *
