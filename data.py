@@ -68,7 +68,7 @@ def create_tables():
         print "Created nu_result table."
         db.create_tables([Result])
 
-    if not Result.table_exists():
+    if not NodeSiteMeta.table_exists():
         print "Created nu_node_site_meta table."
         db.create_tables([NodeSiteMeta])
 
