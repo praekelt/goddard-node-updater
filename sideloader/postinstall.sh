@@ -1,1 +1,2 @@
-# nothing needs to happen here
+# run migrations
+cd ${INSTALLDIR}/${NAME} && ${VENV}/bin/python run_migrations.py
