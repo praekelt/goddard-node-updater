@@ -51,6 +51,8 @@ report_data = []
 
 
 # NOTE: migrations have moved to the `run_migrations.py` script
+data.connect()
+
 
 class NodeCommsTimeoutError(Exception):
     pass
