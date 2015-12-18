@@ -38,6 +38,14 @@ class Result(Model):
         database = db
         db_table = 'nu_result'
 
+class NodeSiteMeta
+    node_id = IntergerField(index=True)
+    ip_address = CharField(null=True. max_length=40)
+    site_name = CharField(null=True, max_length=255)
+
+    class Meta
+        database = db
+        db_table = 'nu_node_site_meta'
 
 class MigrationHistory(Model):
     node_id = IntegerField(index=True)
