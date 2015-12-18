@@ -38,8 +38,8 @@ class Result(Model):
         database = db
         db_table = 'nu_result'
 
-class NodeSiteMeta
-    node_id = IntergerField(index=True)
+class NodeSiteMeta(Model):
+    node_id = IntegerField(index=True)
     ip_address = CharField(null=True. max_length=40)
     site_name = CharField(null=True, max_length=255)
 
