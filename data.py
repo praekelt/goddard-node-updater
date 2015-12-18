@@ -43,7 +43,7 @@ class NodeSiteMeta(Model):
     ip_address = CharField(null=True, max_length=40)
     site_name = CharField(null=True, max_length=255)
 
-    class Meta
+    class Meta:
         database = db
         db_table = 'nu_node_site_meta'
 
