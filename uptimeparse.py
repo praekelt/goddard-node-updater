@@ -1,6 +1,6 @@
 import re
 
-PARSE_REGEX = '^.* up (.*), .* users, .* load average: (.*), (.*), (.*)$'
+PARSE_REGEX = '^.* up (.*), .* user[s]?, .* load average: (.*), (.*), (.*)$'
 
 
 class ParsingError(Exception):
