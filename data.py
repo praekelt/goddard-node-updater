@@ -38,6 +38,7 @@ class Result(Model):
         database = db
         db_table = 'nu_result'
 
+
 class NodeSiteMeta(Model):
     node_id = IntegerField(index=True)
     ip_address = CharField(null=True, max_length=40)
@@ -46,6 +47,7 @@ class NodeSiteMeta(Model):
     class Meta:
         database = db
         db_table = 'nu_node_site_meta'
+
 
 class MigrationHistory(Model):
     node_id = IntegerField(index=True)
