@@ -58,8 +58,10 @@ data.create_tables()
 class NodeCommsTimeoutError(Exception):
     pass
 
+
 class GeneralNodeError(Exception):
     pass
+
 
 def main():
     global current_count, nodes_up_count, tunnel_broken_count, report_start
@@ -307,7 +309,7 @@ def run_updater(node, node_count, cursor, media_folder_size):
             if settings.EXECUTE_MIKROTIK_UPDATE_1:
                 migration_slug = "MIKROTIK_UPDATE_1"
 
-                # Check if we've successfully run this migration
+                # Check if we've previously successfully run this migration
                 migration = get_migration(node['id'], migration_slug)
 
                 if len(migration) < 1:
@@ -319,8 +321,7 @@ def run_updater(node, node_count, cursor, media_folder_size):
                                                   "--groove_password", settings.GROOVE_PASSWORD,
                                                   "--new_rb750_password", settings.NEW_RB750_PASSWORD,
                                                   "--new_groove_password", settings.NEW_GROOVE_PASSWORD,
-                                                  "--new_groove_wlan_password", settings.NEW_GROOVE_WLAN_PASSWORD
-                                        ])
+                                                  "--new_groove_wlan_password", settings.NEW_GROOVE_WLAN_PASSWORD])
 
                     # Evaluate the output
                     print "output: %s" % result.output
@@ -345,7 +346,7 @@ def run_updater(node, node_count, cursor, media_folder_size):
             if settings.EXECUTE_MIKROTIK_UPDATE_2:
                 migration_slug = "MIKROTIK_UPDATE_2"
 
-                # Check if we've successfully run this migration
+                # Check if we've previously successfully run this migration
                 migration = get_migration(node['id'], migration_slug)
 
                 if len(migration) < 1:
@@ -371,7 +372,6 @@ def run_updater(node, node_count, cursor, media_folder_size):
                 else:
                     print 'Migration: %s - Skipped, has been run successfully in the past.' % migration_slug
 
-
             # --------------------------------------------
             # Change the goddard user password
             # --------------------------------------------
@@ -379,7 +379,7 @@ def run_updater(node, node_count, cursor, media_folder_size):
             if settings.CHANGE_GODDARD_PASSWORD:
                 migration_slug = "GODDARD_OS_USER_PASSWORD_UPDATE_1"
 
-                # Check if we've successfully run this migration
+                # Check if we've previously successfully run this migration
                 migration = get_migration(node['id'], migration_slug)
 
                 if len(migration) < 1:
