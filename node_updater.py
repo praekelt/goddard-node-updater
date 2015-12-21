@@ -50,9 +50,8 @@ report_start = None
 report_data = []
 
 
-# Connect to our db and create any tables that might not exist currently.
+# NOTE: migrations have moved to the `run_migrations.py` script
 data.connect()
-data.create_tables()
 
 
 class NodeCommsTimeoutError(Exception):

@@ -38,6 +38,14 @@ class Result(Model):
         database = db
         db_table = 'nu_result'
 
+class NodeSiteMeta(Model):
+    node_id = IntegerField(index=True)
+    ip_address = CharField(null=True, max_length=40)
+    site_name = CharField(null=True, max_length=255)
+
+    class Meta:
+        database = db
+        db_table = 'nu_node_site_meta'
 
 class MigrationHistory(Model):
     node_id = IntegerField(index=True)
@@ -59,6 +67,10 @@ def create_tables():
     if not Result.table_exists():
         print "Created nu_result table."
         db.create_tables([Result])
+
+    if not NodeSiteMeta.table_exists():
+        print "Created nu_node_site_meta table."
+        db.create_tables([NodeSiteMeta])
 
     if not MigrationHistory.table_exists():
         print "Created nu_migration_history table."

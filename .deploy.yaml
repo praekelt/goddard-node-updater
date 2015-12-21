@@ -1,0 +1,3 @@
+name: goddard-node-updater
+buildscript: sideloader/build.sh
+postinstall: sideloader/postinstall.sh
