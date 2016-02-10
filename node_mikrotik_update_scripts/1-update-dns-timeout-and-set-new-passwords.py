@@ -33,7 +33,7 @@ GROOVE_PASSWORD = args.groove_password
 PORT = 8728
 
 # The name of the security profile attached to the "goddard" hidden SSID.
-GODDARD_SECURITY_PROFILE_NAME = 'default'  # "goddard" in production
+GODDARD_SECURITY_PROFILE_NAME = 'goddard'  # "goddard" in production
 MIN_PASSWORD_LENGTH = 6
 
 # What we are going to set
