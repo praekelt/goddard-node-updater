@@ -352,7 +352,7 @@ def run_updater(node, node_count, cursor, media_folder_size):
                     # Execute the script
                     print "Migration: %s - Running" % migration_slug
                     result = shell.run(["python", "/var/goddard/node_updater/node_mikrotik_update_scripts/2-upd"
-                                                  "ate-mtus.py", "--rb750_password", settings.RB750_PASSWORD])
+                                                  "ate-mtus.py", "--rb750_password", settings.NEW_RB750_PASSWORD])
 
                     # Evaluate the output
                     print "output: %s" % result.output
