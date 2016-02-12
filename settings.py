@@ -28,7 +28,7 @@ CHANGE_GODDARD_PASSWORD = False
 NEW_GODDARD_USER_PASSWORD = "SuperSecurePassword4"
 
 EXECUTE_MIKROTIK_UPDATE_2 = False   # MTU CHANGE ON THE RB750
-
+EXECUTE_MIKROTIK_UPDATE_3 = False   # Set the groove's `goddard` password
 try:
     from local_settings import *
 except ImportError:
