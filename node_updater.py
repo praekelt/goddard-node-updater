@@ -294,8 +294,8 @@ def run_updater(node, node_count, cursor, media_folder_size):
 
             result = \
                 shell.run(["rsync", "-aPzri", "--exclude='.git/'", "--no-perms", "--no-owner", "--progress",
-                          "node@hub.goddard.unicore.io:/var/goddard/node_updater/node_mikrotik_update_scripts/",
-                           "/var/goddard/node_updater/node_mikrotik_update_scripts"])
+                          settings.RSYNC_MIGRATION_FROM,
+                          settings.RSYNC_MIGRATION_TO])
 
             if result.return_code != 0:
                 raise GeneralNodeError('Rsync of Mikrotik Update Scripts failed')
