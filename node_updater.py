@@ -372,6 +372,40 @@ def run_updater(node, node_count, cursor, media_folder_size):
                     print 'Migration: %s - Skipped, has been run successfully in the past.' % migration_slug
 
             # --------------------------------------------
+            # UPDATE 3 - Groove Wifi Password Only
+            # --------------------------------------------
+            if settings.EXECUTE_MIKROTIK_UPDATE_3:
+                migration_slug = "MIKROTIK_UPDATE_3"
+
+                # Check if we've previously successfully run this migration
+                migration = get_migration(node['id'], migration_slug)
+
+                if len(migration) < 1:
+                    # Execute the script
+                    print "Migration: %s - Running" % migration_slug
+                    result = shell.run(["python", "/var/goddard/node_updater/node_mikrotik_update_scripts/3-update-"
+                                                  "groove-wlan-password-only.py",
+                                                  "--groove_password", settings.NEW_GROOVE_PASSWORD,
+                                                  "--new_groove_wlan_password", settings.NEW_GROOVE_WLAN_PASSWORD])
+
+                    # Evaluate the output
+                    print "output: %s" % result.output
+                    print "return code: %s" % result.return_code
+                    print "stderr: %s" % result.stderr_output
+
+                    if result.return_code == 0:
+                        set_migration(node['id'], migration_slug, True)
+                        print 'Migration: %s - Success' % migration_slug
+                        msg_strs.append(':lock: Groove Wifi Password Update Success    ')
+                    else:
+                        set_migration(node['id'], migration_slug, False)
+                        print 'Migration: %s - Failed' % migration_slug
+                        msg_strs.append(':feelsgood: Groove Wifi Password Update Failure    ')
+
+                else:
+                    print 'Migration: %s - Skipped, has been run successfully in the past.' % migration_slug
+
+            # --------------------------------------------
             # Change the goddard user password
             # --------------------------------------------
 
