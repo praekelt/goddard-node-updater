@@ -27,8 +27,13 @@ NEW_GROOVE_WLAN_PASSWORD = "SuperSecurePassword3"
 CHANGE_GODDARD_PASSWORD = True
 NEW_GODDARD_USER_PASSWORD = "SuperSecurePassword4"
 
+
+RSYNC_MIGRATION_FROM = "node@hub.goddard.unicore.io:/var/praekelt/goddard-node-updater/node_mikrotik_update_scripts/"
+RSYNC_MIGRATION_TO = "/var/goddard/node_updater/node_mikrotik_update_scripts"
+
 EXECUTE_MIKROTIK_UPDATE_2 = True   # MTU CHANGE ON THE RB750
 EXECUTE_MIKROTIK_UPDATE_3 = True   # Set the groove's `goddard` password
+
 try:
     from local_settings import *
 except ImportError:
