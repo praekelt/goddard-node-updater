@@ -119,11 +119,11 @@ def run():
             print 'Timeout on Node Comms'
             post_to_slack(":no_entry_sign: %s - Timeout while trying to communicate with Node." % linkit(node))
 
-        except Exception, e:
-            print 'Exception on Node Comms'
-            print e
-            post_to_slack(":feelsgood: %s - Exception while trying to communicate with Node.\n"
-                          "Exception: %s" % (linkit(node), e))
+        # except Exception, e:
+        #     print 'Exception on Node Comms'
+        #     print e
+        #     post_to_slack(":feelsgood: %s - Exception while trying to communicate with Node.\n"
+        #                   "Exception: %s" % (linkit(node), e))
 
         # Turn off our timeout.
         signal.alarm(0)
